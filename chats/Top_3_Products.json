@@ -1,0 +1,53 @@
+[
+    {
+        "role": "user",
+        "content": "Which 3 products have the highest invoice quantity? by revenue"
+    },
+    {
+        "role": "assistant",
+        "content": "The top 3 products by revenue are Product 1, Product 3, and Product 2, with total revenues of $764.5B, $530.1B, and $459.7B respectively. These products also have the highest invoice quantities, with 4.9M, 3.1M, and 2.9M units sold.",
+        "data": [
+            {
+                "Product Name": "Product 1",
+                "Total Quantity": 4917207.0,
+                "Total Revenue": 764515335096.0
+            },
+            {
+                "Product Name": "Product 3",
+                "Total Quantity": 3070501.0,
+                "Total Revenue": 530087675896.5
+            },
+            {
+                "Product Name": "Product 2",
+                "Total Quantity": 2950133.0,
+                "Total Revenue": 459690258916.0
+            },
+            {
+                "Product Name": "Product 4",
+                "Total Quantity": 1247573.0,
+                "Total Revenue": 209658808566.0
+            },
+            {
+                "Product Name": "Product 5",
+                "Total Quantity": 673759.0,
+                "Total Revenue": 103114895616.0
+            },
+            {
+                "Product Name": "No Sale",
+                "Total Quantity": 0.0,
+                "Total Revenue": 0.0
+            }
+        ],
+        "chart_data": [
+            "Product Name",
+            [
+                "Total Quantity",
+                "Total Revenue"
+            ]
+        ],
+        "follow_ups": [
+            "What are their costs?",
+            "Which products are declining?"
+        ]
+    }
+]

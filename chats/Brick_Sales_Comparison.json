@@ -1,0 +1,147 @@
+[
+    {
+        "role": "user",
+        "content": "Compare top 5 bricks by internal units vs market units"
+    },
+    {
+        "role": "assistant",
+        "content": "\u26a1 **(Cached Response)**\n\nHere are the latest results from the database for your request. The SQL logic was retrieved from history for high-speed performance.",
+        "data": [
+            {
+                "Brick Name": "RAB MEDICAL CENTRE - GULSHAN-E",
+                "Internal Units": NaN,
+                "IMS Market Units": NaN
+            },
+            {
+                "Brick Name": "LIAQUATABAD BLOCK-6",
+                "Internal Units": NaN,
+                "IMS Market Units": NaN
+            },
+            {
+                "Brick Name": "LIAQUATABAD BLOCK-9",
+                "Internal Units": NaN,
+                "IMS Market Units": NaN
+            },
+            {
+                "Brick Name": "GULSHAN-E-IQBAL BLOCK-19",
+                "Internal Units": NaN,
+                "IMS Market Units": NaN
+            },
+            {
+                "Brick Name": "LIAQUATABAD B-1-AREA",
+                "Internal Units": NaN,
+                "IMS Market Units": NaN
+            },
+            {
+                "Brick Name": "LIAQUATABAD A-1-AREA",
+                "Internal Units": NaN,
+                "IMS Market Units": NaN
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-3",
+                "Internal Units": 7098719915.0,
+                "IMS Market Units": 7890489832.0
+            },
+            {
+                "Brick Name": "P.I.B. COLONY",
+                "Internal Units": 3821840864.0,
+                "IMS Market Units": 4115181400.0
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-14",
+                "Internal Units": 3591944284.0,
+                "IMS Market Units": 3774122651.0
+            },
+            {
+                "Brick Name": "A.H.ISPHANI ROAD",
+                "Internal Units": 3031054370.0,
+                "IMS Market Units": 3202600638.0
+            }
+        ],
+        "chart_data": [
+            "Brick Name",
+            [
+                "Internal Units",
+                "IMS Market Units"
+            ]
+        ],
+        "follow_ups": [
+            "Is data up to date?",
+            "What are the results?"
+        ]
+    },
+    {
+        "role": "user",
+        "content": "\"Show me the top 5 doctors from 'Category A' who has not been visited (0 visits) in the current month's doctor plan, but are in bricks with high market sales (top 5 bricks)."
+    },
+    {
+        "role": "assistant",
+        "content": "I executed the query, but it returned no data. This usually means the specific filters (like region name) didn't match anything in the database.",
+        "data": [],
+        "chart_data": null,
+        "follow_ups": [
+            "\"Check filter values?\"",
+            "\"Data exist?\""
+        ]
+    },
+    {
+        "role": "user",
+        "content": "\"Check filter values?\""
+    },
+    {
+        "role": "assistant",
+        "content": "The database query returned 10 records with unique ids and names. The ids range from 1002 to 1149 and 1068 to 1124.",
+        "data": [
+            {
+                "id": 1002,
+                "name": "A.H.ISPHANI ROAD"
+            },
+            {
+                "id": 1145,
+                "name": "GULSHAN-E-IQBAL BLOCK-5"
+            },
+            {
+                "id": 1146,
+                "name": "GULSHAN-E-IQBAL BLOCK-6"
+            },
+            {
+                "id": 1147,
+                "name": "GULSHAN-E-IQBAL BLOCK-7"
+            },
+            {
+                "id": 1149,
+                "name": "GULSHAN-E-IQBAL BLOCK-9"
+            },
+            {
+                "id": 1068,
+                "name": "F.B.AREA BLOCK-10"
+            },
+            {
+                "id": 1121,
+                "name": "GULSHAN-E-IQBAL BLOCK-1"
+            },
+            {
+                "id": 1122,
+                "name": "GULSHAN-E-IQBAL BLOCK-10"
+            },
+            {
+                "id": 1123,
+                "name": "GULSHAN-E-IQBAL BLOCK-10A"
+            },
+            {
+                "id": 1124,
+                "name": "GULSHAN-E-IQBAL BLOCK-11"
+            }
+        ],
+        "chart_data": [
+            "id",
+            [
+                "id"
+            ]
+        ],
+        "follow_ups": [
+            "What are the names?",
+            "Are they sorted?"
+        ]
+    }
+]

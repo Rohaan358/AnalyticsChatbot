@@ -15,8 +15,7 @@ load_dotenv(override=True)
 DB_URL = os.getenv("DATABASE_URL")
 LLM_API_KEY = os.getenv("LLM_API_KEY").strip() if os.getenv("LLM_API_KEY") else None
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1")
-RAW_MODEL = os.getenv("LLM_MODEL", "meta-llama/llama-3.3-70b-instruct")
-LLM_MODEL = "meta-llama/llama-3.3-70b-instruct" if "Llama 3.3 70B Instruct" in RAW_MODEL else RAW_MODEL
+LLM_MODEL = os.getenv("LLM_MODEL", "meta-llama/llama-3.3-70b-instruct")
 
 client = openai.OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
 
@@ -121,13 +120,14 @@ def get_rag_context(user_query: str):
     
     # Add explicit warning about table existence and column mapping based on schema analysis
     context += "\n--- DATABASE SCHEMA MAPPINGS & LIMITATIONS (DO NOT IGNORE) ---\n"
-    context += "- WARNING: Table 'orders' does NOT contain 'product_quantity'. DO NOT use o.\"product_quantity\".\n"
-    context += "- RULE: Join 'orders' -> 'order_details' to get 'product_quantity'.\n"
-    context += "- RULE: Always CAST \"order_details\".\"product_quantity\" to NUMERIC (e.g. SUM(CAST(\"order_details\".\"product_quantity\" AS NUMERIC))).\n"
+    context += "- !! IMPORTANT !!: Table 'orders' is EMPTY (0 rows). DO NOT USE 'orders' or 'order_details' for sales queries.\n"
+    context += "- !! RULE !!: Use 'invoice_details' for ALL Internal Sales/Quantity queries.\n"
+    context += "- RULE: Join 'invoice' -> 'invoice_details' to get 'product_quantity'.\n"
+    context += "- RULE: Join 'customer_details' -> 'invoice' using cd.customer_id = inv.cust_id.\n"
+    context += "- RULE: Always CAST \"invoice_details\".\"product_quantity\" AS NUMERIC for SUM operations.\n"
     context += "- TABLE 'doctors': Use 'category' for doctor segments (A, B, C, D).\n"
     context += "- TABLE 'doctor_calls': DOES NOT EXIST. Use 'doctor_plan' for all visit-related queries.\n"
-    context += "- TABLE 'targets': Use this for sales goals. Columns: \"quantity_target\", \"sale_target\".\n"
-    context += "- TABLE 'ims_sale' / 'ims_customer_sale': Use \"unit\" for quantity and \"price\" for value.\n"
+    context += "- TABLE 'ims_sale': Use this for Market units. Column: 'unit'.\n"
     return context
 
 @st.cache_data(ttl=1800)
@@ -186,37 +186,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("💊 Antigravity Pharma Intelligence")
+st.title("💊 Pharma Intelligence ChatBot")
 st.caption("AI Agent with RAG (Retrieval-Augmented Generation)")
-
-# --- EXECUTIVE KPI SNAPSHOT ---
-with st.container():
-    kpis = get_executive_kpis()
-    c1, c2, c3, c4 = st.columns(4)
-    
-    with c1:
-        st.metric("📦 Internal Sales", f"{float(kpis['internal_sales'])/1e6:.1f}M Units")
-    with c2:
-        st.metric("🌍 IMS Market Size", f"{float(kpis['market_sales'])/1e6:.1f}M Units")
-    with c3:
-        st.metric("🏆 Top Brick", kpis['top_brick'])
-    with c4:
-        st.metric("👨‍⚕️ Active Doctors", kpis['doc_count'])
-
 st.divider()
-
-# --- ONBOARDING GUIDE ---
-with st.expander("🚀 **How to get the best reports?** (New User Guide)", expanded=not st.session_state.messages):
-    st.markdown("""
-    Welcome to **Antigravity Pharma Intelligence**! Here's how to use this AI Agent:
-    
-    1. **📊 Ask about Data**: You can ask for Internal Sales (from Invoices), Market Sales (from IMS), or Doctor segments.
-    2. **⚖️ Comparisons**: Use words like *'Compare'*, *'Vs'*, or *'Top 5'* for the best charts.
-    3. **⚡ Speed**: Repeat questions are served instantly from **Cache**.
-    4. **📂 Sessions**: Your chats are auto-saved in the sidebar with AI-generated titles.
-    
-    **Pro Tip:** For internal sales, ask about *"Invoice quantity"* or *"Invoiced units"*.
-    """)
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -248,18 +220,16 @@ with st.sidebar:
                         st.rerun()
     
     st.divider()
-    st.header("📊 Data Health Check")
-    st.success("IMS Market Sales: 156k+ records")
-    st.success("Internal Sales (Invoices): 55k+ records")
-    st.success("Doctors: 382 records")
-    st.warning("⚠️ Orders & Targets: 0 records")
+    with st.expander("📊 Data Health Check"):
+        st.success("IMS Market Sales: 156k+ records")
+        st.success("Internal Sales (Invoices): 55k+ records")
+        st.success("Doctors: 382 records")
+        st.warning("⚠️ Orders & Targets: 0 records")
     
     st.divider()
     if st.button("Clear History"):
         st.session_state.messages = []
-    st.divider()
-    st.markdown("### Agent Reason (RAG)")
-    st.write("The agent uses `knowledge/` and REAL-TIME table stats for high accuracy.")
+    
 
 # --- HELPER: Handle question submission ---
 def submit_question(q):
@@ -296,7 +266,19 @@ for idx, message in enumerate(st.session_state.messages):
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if "data" in message:
-            st.dataframe(message["data"])
+            df_hist = pd.DataFrame(message["data"])
+            # USE COERCE to handle 'None' values seen in screenshot
+            # This ensures the column type becomes numeric (with NaNs) even with empty rows
+            for c in df_hist.columns:
+                if "id" not in c.lower() or c.lower().endswith("_id"):
+                    df_hist[c] = pd.to_numeric(df_hist[c], errors='coerce')
+            
+            hist_num_cols = df_hist.select_dtypes(include=['number']).columns.tolist()
+            st.dataframe(
+                df_hist, 
+                column_config={col: st.column_config.NumberColumn(format="%,d") for col in hist_num_cols},
+                use_container_width=True
+            )
         if message.get("chart_data") is not None:
             # Re-generate chart to avoid session state serialization issues
             x_col, y_cols = message["chart_data"]
@@ -376,9 +358,9 @@ if prompt:
                     except Exception as api_err:
                         # AUTO FALLBACK if primary is rate-limited (429) or fails
                         if "429" in str(api_err) or "rate-limit" in str(api_err).lower():
-                            st.toast("⚠️ Primary Model busy, trying fallback (Auto Free Router)...", icon="🔀")
+                            st.toast("⚠️ Primary Model busy, trying fallback (Llama 8B)...", icon="🔀")
                             response = client.chat.completions.create(
-                                model="openrouter/free",
+                                model="llama-3.1-8b-instant",
                                 messages=[{"role": "system", "content": "You are a professional database agent."}, {"role": "user", "content": gen_prompt}],
                                 timeout=20.0
                             )
@@ -428,21 +410,26 @@ if prompt:
                     # st.code(sql_query, language="sql") # Optional: Show SQL for debugging
                     chart_data = None
                     if not df.empty:
-                        st.dataframe(df)
+                        # Force conversion to ensure commas work (COERCE handles None/NaNs correctly)
+                        for col in df.columns:
+                            if "id" not in col.lower() or col.lower().endswith("_id"):
+                                df[col] = pd.to_numeric(df[col], errors='coerce')
+
+                        # Identify numeric columns for comma formatting
+                        numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
                         
-                        # Enhanced Multi-Column Auto-Charting
+                        # Display with commas using Streamlit's Column Config
+                        st.dataframe(
+                            df, 
+                            column_config={col: st.column_config.NumberColumn(format="%,d") for col in numeric_cols},
+                            use_container_width=True
+                        )
+                        
+                        # --- Enhanced Multi-Column Auto-Charting ---
                         chart_data = None
                         if len(df) > 1:
-                            # 1. First column is the X-axis (Names/Labels)
+                            # Use the first column as X
                             x_col = df.columns[0]
-                            
-                            # 2. Try to convert other columns to numeric if they are strings/objects
-                            # (Important because SUM() or Large Numbers often come as Decimal/Object)
-                            for col in df.columns[1:]:
-                                df[col] = pd.to_numeric(df[col], errors='ignore')
-                            
-                            # 3. Get all numeric columns
-                            numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
                             
                             if len(numeric_cols) > 0:
                                 # Ensure we have multiple bars if there are multiple stats
@@ -456,7 +443,7 @@ if prompt:
                                 )
                                 st.plotly_chart(fig, use_container_width=True, key=f"chart_new_{len(st.session_state.messages)}")
                                 
-                                # Store for history
+                                # Store for history (Original raw numeric cols list)
                                 chart_data = (x_col, numeric_cols)
                 
                 # --- GENERATE FOLLOW-UPS ---

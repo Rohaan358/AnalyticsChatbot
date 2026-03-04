@@ -1,0 +1,87 @@
+[
+    {
+        "role": "user",
+        "content": "Compare market units of 'Product A' vs 'Product B' across bricks"
+    },
+    {
+        "role": "assistant",
+        "content": "I executed the query, but it returned no data. This usually means the specific filters (like region name) didn't match anything in the database.",
+        "data": [],
+        "chart_data": null,
+        "follow_ups": [
+            "\"Check region name?\"",
+            "\"Show all data?\""
+        ]
+    },
+    {
+        "role": "user",
+        "content": "\"Show all data?\""
+    },
+    {
+        "role": "assistant",
+        "content": "The data shows 10 records with unit values ranging from 23 to 551. The total number of records is 10, all associated with brickId 1077.",
+        "data": [
+            {
+                "id": "1",
+                "brickId": 1077,
+                "unit": 211
+            },
+            {
+                "id": "2",
+                "brickId": 1077,
+                "unit": 62
+            },
+            {
+                "id": "3",
+                "brickId": 1077,
+                "unit": 231
+            },
+            {
+                "id": "4",
+                "brickId": 1077,
+                "unit": 99
+            },
+            {
+                "id": "5",
+                "brickId": 1077,
+                "unit": 23
+            },
+            {
+                "id": "6",
+                "brickId": 1077,
+                "unit": 54
+            },
+            {
+                "id": "7",
+                "brickId": 1077,
+                "unit": 551
+            },
+            {
+                "id": "8",
+                "brickId": 1077,
+                "unit": 122
+            },
+            {
+                "id": "9",
+                "brickId": 1077,
+                "unit": 134
+            },
+            {
+                "id": "10",
+                "brickId": 1077,
+                "unit": 98
+            }
+        ],
+        "chart_data": [
+            "id",
+            [
+                "brickId",
+                "unit"
+            ]
+        ],
+        "follow_ups": [
+            "What is brickId 1077?",
+            "Why so few records?"
+        ]
+    }
+]

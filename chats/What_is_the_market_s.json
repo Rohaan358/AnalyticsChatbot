@@ -1,0 +1,13 @@
+[
+    {
+        "role": "user",
+        "content": "What is the market share of Karachi brick?"
+    },
+    {
+        "role": "assistant",
+        "content": "I executed the query, but it returned no data. This usually means the specific filters (like region name) didn't match anything in the database.",
+        "data": [],
+        "chart_data": null,
+        "follow_ups": []
+    }
+]

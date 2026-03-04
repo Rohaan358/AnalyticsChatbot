@@ -39,5 +39,49 @@
             ]
         ],
         "follow_ups": []
+    },
+    {
+        "role": "user",
+        "content": "Which 3 products have the highest invoice quantity?"
+    },
+    {
+        "role": "assistant",
+        "content": "\u26a1 **(Cached Response)**\n\nHere are the latest results from the database for your request. The SQL logic was retrieved from history for high-speed performance.",
+        "data": [
+            {
+                "name": "Product 1",
+                "Total Quantity": 4917207.0
+            },
+            {
+                "name": "Product 3",
+                "Total Quantity": 3070501.0
+            },
+            {
+                "name": "Product 2",
+                "Total Quantity": 2950133.0
+            },
+            {
+                "name": "Product 4",
+                "Total Quantity": 1247573.0
+            },
+            {
+                "name": "Product 5",
+                "Total Quantity": 673759.0
+            },
+            {
+                "name": "No Sale",
+                "Total Quantity": 0.0
+            }
+        ],
+        "chart_data": [
+            "name",
+            [
+                "Total Quantity"
+            ]
+        ],
+        "follow_ups": [
+            "Is data up to date?",
+            "How old is cache?"
+        ]
     }
 ]

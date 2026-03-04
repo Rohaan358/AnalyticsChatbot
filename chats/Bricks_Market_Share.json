@@ -1,0 +1,180 @@
+[
+    {
+        "role": "user",
+        "content": "Which bricks have more than 50% market share?"
+    },
+    {
+        "role": "assistant",
+        "content": "All listed bricks have more than 50% market share, with the highest being over 100% and the lowest at 84%. The majority of bricks have market shares ranging from 89% to 96%.",
+        "data": [
+            {
+                "Brick Name": "A.H.ISPHANI ROAD",
+                "Market Share": 0.9464353232293335
+            },
+            {
+                "Brick Name": "ASHFAQ MEMORIAL HOSP. - GULSHA",
+                "Market Share": 0.9607277151274329
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-1",
+                "Market Share": 0.840963846919496
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-10",
+                "Market Share": 0.8855450623703995
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-12",
+                "Market Share": 0.8929666250679978
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-13",
+                "Market Share": 0.9048333081444905
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-14",
+                "Market Share": 0.951729611396776
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-15",
+                "Market Share": 0.8727680659751
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-16",
+                "Market Share": 1.0184919379139932
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-17",
+                "Market Share": 0.9943976244418821
+            }
+        ],
+        "chart_data": [
+            "Brick Name",
+            [
+                "Market Share"
+            ]
+        ],
+        "follow_ups": [
+            "What is the average?",
+            "How is 100% possible?"
+        ]
+    },
+    {
+        "role": "user",
+        "content": "Show top 5 products by quantity"
+    },
+    {
+        "role": "assistant",
+        "content": "The top 5 products by quantity all have the same product ID (1) with totals ranging from 5771 to 6749. The product with ID 1 has the highest quantities, with the top instance having 6749 units.",
+        "data": [
+            {
+                "id": 39873,
+                "product_id": 1,
+                "Total Quantity": 6749.0
+            },
+            {
+                "id": 6727,
+                "product_id": 1,
+                "Total Quantity": 6346.0
+            },
+            {
+                "id": 28406,
+                "product_id": 1,
+                "Total Quantity": 5927.0
+            },
+            {
+                "id": 5837,
+                "product_id": 1,
+                "Total Quantity": 5797.0
+            },
+            {
+                "id": 39877,
+                "product_id": 1,
+                "Total Quantity": 5771.0
+            }
+        ],
+        "chart_data": [
+            "id",
+            [
+                "id",
+                "product_id",
+                "Total Quantity"
+            ]
+        ],
+        "follow_ups": [
+            "What is product 1?",
+            "Why so many units?"
+        ]
+    },
+    {
+        "role": "user",
+        "content": "Why so many units?"
+    },
+    {
+        "role": "assistant",
+        "content": "The results show a range of internal units from 1.37 billion to 7.10 billion and IMS market units from 1.66 billion to 7.89 billion across different brick names. The highest internal units are reported for F.B.AREA BLOCK-3 with 7.10 billion.",
+        "data": [
+            {
+                "Brick Name": "F.B.AREA BLOCK-3",
+                "Internal Units": 7098719915.0,
+                "IMS Market Units": 7890489832
+            },
+            {
+                "Brick Name": "P.I.B. COLONY",
+                "Internal Units": 3821840864.0,
+                "IMS Market Units": 4115181400
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-14",
+                "Internal Units": 3591944284.0,
+                "IMS Market Units": 3774122651
+            },
+            {
+                "Brick Name": "A.H.ISPHANI ROAD",
+                "Internal Units": 3031054370.0,
+                "IMS Market Units": 3202600638
+            },
+            {
+                "Brick Name": "GULSHAN-E-IQBAL BLOCK-5",
+                "Internal Units": 2608375770.0,
+                "IMS Market Units": 2783730745
+            },
+            {
+                "Brick Name": "GULSHAN-E-IQBAL BLOCK-6",
+                "Internal Units": 1924352995.0,
+                "IMS Market Units": 2107070500
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-20",
+                "Internal Units": 1773106787.0,
+                "IMS Market Units": 1859873130
+            },
+            {
+                "Brick Name": "GULSHAN-E-IQBAL BLOCK-2",
+                "Internal Units": 1734829117.0,
+                "IMS Market Units": 1663073924
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-13",
+                "Internal Units": 1499671152.0,
+                "IMS Market Units": 1657400472
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-17",
+                "Internal Units": 1369156464.0,
+                "IMS Market Units": 1376870208
+            }
+        ],
+        "chart_data": [
+            "Brick Name",
+            [
+                "Internal Units",
+                "IMS Market Units"
+            ]
+        ],
+        "follow_ups": [
+            "What is F.B.AREA BLOCK-3?",
+            "Why the large range?"
+        ]
+    }
+]

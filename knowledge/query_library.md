@@ -2,16 +2,26 @@
 
 ### Example 1: Comparing Internal Sales (Orders) with IMS Benchmarks
 ```sql
+WITH Internal AS (
+  SELECT ib."name", SUM(ms."product_quantity") as qty 
+  FROM "master_sale" ms 
+  JOIN "customer_details" cd ON ms."customer_id" = cd."customer_id" 
+  JOIN "ims_brick" ib ON cd."ims_brick_id" = ib."id" 
+  GROUP BY 1
+),
+Market AS (
+  SELECT ib."name", SUM("unit") as qty 
+  FROM "ims_sale" s 
+  JOIN "ims_brick" ib ON s."brickId" = ib."id" 
+  GROUP BY 1
+)
 SELECT 
-  b."name" AS "Brick Name", 
-  SUM(CAST(od."product_quantity" AS numeric)) AS "Internal Units", 
-  SUM(ims."unit") AS "IMS Market Units"
-FROM "ims_brick" AS b
-JOIN "ims_sale" AS ims ON b."id" = ims."brickId"
-LEFT JOIN "customer_details" AS cd ON b."id" = cd."ims_brick_id"
-LEFT JOIN "orders" AS o ON cd."customer_id" = o."customer_id"
-LEFT JOIN "order_details" AS od ON o."id" = od."order_id"
-GROUP BY b."name"
+  COALESCE(i."name", m."name") AS "Brick Name", 
+  COALESCE(i.qty, 0) AS "Internal Units", 
+  COALESCE(m.qty, 0) AS "IMS Market Units"
+FROM Internal i 
+FULL OUTER JOIN Market m ON i."name" = m."name"
+ORDER BY "Internal Units" DESC
 LIMIT 5;
 ```
 

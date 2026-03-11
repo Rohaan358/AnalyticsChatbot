@@ -438,13 +438,14 @@ if prompt:
                     gen_prompt = (
                         f"KNOWLEDGE BASE & BUSINESS LOGIC:\n{rag_context}\n\n"
                         f"DATABASE SCHEMA:\n{schema}\n\n"
-                        f"STRICT SQL RULES (CRITICAL):\n"
-                        f"1. Never return constant values like 0 for 'brick_name'. Always SELECT the actual column.\n"
-                        f"2. Group data by the real column name (e.g., GROUP BY \"brick_name\"). Never use numeric indexes.\n"
-                        f"3. Exclude NULL or missing categories using WHERE/HAVING filters.\n"
-                        f"4. If a category column (like brick_name) doesn't exist in the relevant tables, RETURN AN ERROR message instead of fake data.\n"
-                        f"5. Each unique category must have its own separate row in the results.\n"
-                        f"6. MANDATORY: Use ILIKE for all string/name comparisons (e.g., ib.name ILIKE '%gulshan%') to prevent case-sensitivity misses.\n\n"
+                        f"QUERY VALIDATION RULES (CRITICAL BEFORE EXECUTING):\n"
+                        f"1. Verify table exists in schema (e.g. 'orders' is EMPTY, 'master_sale' is NOT).\n"
+                        f"2. Verify all column names exist exactly as written.\n"
+                        f"3. If filter value may differ, ALWAYS use ILIKE '%value%'.\n"
+                        f"4. If your previous query returned 0 rows, you MUST generate a simple query to inspect available values: SELECT DISTINCT <column_name> FROM <table> LIMIT 10;\n"
+                        f"5. Never return constant values like 0 for 'brick_name'. Always select the actual column.\n"
+                        f"6. Group data by the real column name. Never use numeric indexes.\n"
+                        f"7. Exclude NULL or missing categories using WHERE/HAVING filters.\n\n"
                         f"USER QUESTION: {prompt}"
                         f"{error_feedback}\n\n"
                         "RULES: Return ONLY valid PostgreSQL SELECT query inside triple backticks. Use double quotes for identifiers. Use LIMIT 10."
@@ -470,8 +471,14 @@ if prompt:
                     if isinstance(results, dict) and "error" in results:
                         last_error = results["error"]
                         continue
+                        
+                    if not results and current_attempt < max_retries:
+                        last_error = f"The query returned 0 rows. As per Validation Rule 4, generate a query to SELECT DISTINCT values from the filtered column to see what data is actually available, so the user knows what they can search for."
+                        continue
+                        
                     else:
-                        save_to_query_cache(prompt, sql_query)
+                        if results: # Only save to cache if it actually returned data
+                            save_to_query_cache(prompt, sql_query)
                         break
 
             # Final Output Handling
@@ -484,23 +491,26 @@ if prompt:
                 df = pd.DataFrame(results)
                 
                 if df.empty:
-                    # PROACTIVE DISCOVERY: Try to find similar bricks if the query mentioned a specific name
+                    # PROACTIVE DISCOVERY: Try to find similar bricks
                     discovery_msg = ""
                     potential_brick = re.search(r"ILIKE '%(.*?)%'", sql_query, re.I)
                     if potential_brick:
                         search_term = potential_brick.group(1)
                         discovery_results = run_sql_query(f"SELECT name FROM ims_brick WHERE name ILIKE '%{search_term}%' LIMIT 3")
                         if discovery_results:
-                            names_list = "\n".join([f"{i+1}. {r['name']}" for i, r in enumerate(discovery_results)])
-                            discovery_msg = f"\n\n**💡 Did you mean one of these bricks?**\n{names_list}"
+                            names_list = "\n".join([f"- {r['name']}" for r in discovery_results])
+                            discovery_msg = f"Available similar options in database:\n{names_list}"
 
-                    final_answer = (
-                        "⚠️ **I executed the query, but it returned no data.**\n\n"
-                        "This usually means the filter doesn't match exactly. "
-                        "I've used case-insensitive matching, but the spelling might be different."
-                        f"{discovery_msg}\n\n"
-                        "Click the **Debug Info** below to see the SQL logic."
+                    # Let the LLM generate a friendly "no data" message
+                    empty_prompt = (
+                        f"User asked: {prompt}\n\n"
+                        f"Your SQL query returned exactly 0 rows.\n"
+                        f"To assist the user, explain politely that the specific filter they used might not match exactly.\n"
+                        f"If I found similar available options in the database, here they are: {discovery_msg}\n"
+                        f"Incorporate these options into your advice if they exist."
                     )
+                    empty_res = client.chat.completions.create(model=LLM_MODEL, messages=[{"role": "user", "content": empty_prompt}], timeout=30.0)
+                    final_answer = empty_res.choices[0].message.content
                 else:
                     # IF CACHED: Skip AI summary for 1-second performance
                     if is_cached:

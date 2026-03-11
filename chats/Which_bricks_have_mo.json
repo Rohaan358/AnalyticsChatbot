@@ -1,0 +1,59 @@
+[
+    {
+        "role": "user",
+        "content": "Which bricks have more than 50% market share?"
+    },
+    {
+        "role": "assistant",
+        "content": "\u26a1 **(Cached Response)**\n\nHere are the latest results from the database for your request. The SQL logic was retrieved from history for high-speed performance.",
+        "data": [
+            {
+                "Brick Name": "A.H.ISPHANI ROAD",
+                "Market Share": 0.9464353232293335
+            },
+            {
+                "Brick Name": "ASHFAQ MEMORIAL HOSP. - GULSHA",
+                "Market Share": 0.9607277151274329
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-1",
+                "Market Share": 0.840963846919496
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-10",
+                "Market Share": 0.8855450623703995
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-12",
+                "Market Share": 0.8929666250679978
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-13",
+                "Market Share": 0.9048333081444905
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-14",
+                "Market Share": 0.951729611396776
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-15",
+                "Market Share": 0.8727680659751
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-16",
+                "Market Share": 1.0184919379139932
+            },
+            {
+                "Brick Name": "F.B.AREA BLOCK-17",
+                "Market Share": 0.9943976244418821
+            }
+        ],
+        "chart_data": [
+            "Brick Name",
+            [
+                "Market Share"
+            ]
+        ],
+        "follow_ups": []
+    }
+]

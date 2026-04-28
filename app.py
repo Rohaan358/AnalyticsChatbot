@@ -252,21 +252,24 @@ def plot_smart_chart(df: pd.DataFrame, x_col: str, y_cols: list, title: str, key
 @st.cache_data(ttl=1800)
 def get_executive_kpis() -> dict:
     kpis = {"internal_sales": 0, "market_sales": 0, "top_brick": "N/A", "doc_count": 0}
-    r = run_sql_query('SELECT SUM(CAST("product_quantity" AS NUMERIC)) as total FROM "invoice_details"')
-    if isinstance(r, list) and r: kpis["internal_sales"] = r[0].get("total") or 0
-    r = run_sql_query('SELECT SUM("unit") as total FROM "ims_sale"')
-    if isinstance(r, list) and r: kpis["market_sales"] = r[0].get("total") or 0
-    r = run_sql_query('''
-        SELECT b.name, SUM(CAST(id.product_quantity AS NUMERIC)) as total
-        FROM ims_brick b
-        JOIN customer_details cd ON b.id = cd.ims_brick_id
-        JOIN invoice inv ON cd.customer_id = inv.cust_id
-        JOIN invoice_details id ON inv.id = id.invoice_id
-        GROUP BY b.name ORDER BY total DESC LIMIT 1
-    ''')
-    if isinstance(r, list) and r: kpis["top_brick"] = r[0].get("name", "N/A")
-    r = run_sql_query('SELECT COUNT(*) as total FROM "doctors"')
-    if isinstance(r, list) and r: kpis["doc_count"] = r[0].get("total") or 0
+    try:
+        r = run_sql_query('SELECT SUM(CAST("product_quantity" AS NUMERIC)) as total FROM "invoice_details"')
+        if isinstance(r, list) and r: kpis["internal_sales"] = r[0].get("total") or 0
+        r = run_sql_query('SELECT SUM("unit") as total FROM "ims_sale"')
+        if isinstance(r, list) and r: kpis["market_sales"] = r[0].get("total") or 0
+        r = run_sql_query('''
+            SELECT b.name, SUM(CAST(id.product_quantity AS NUMERIC)) as total
+            FROM ims_brick b
+            JOIN customer_details cd ON b.id = cd.ims_brick_id
+            JOIN invoice inv ON cd.customer_id = inv.cust_id
+            JOIN invoice_details id ON inv.id = id.invoice_id
+            GROUP BY b.name ORDER BY total DESC LIMIT 1
+        ''')
+        if isinstance(r, list) and r: kpis["top_brick"] = r[0].get("name", "N/A")
+        r = run_sql_query('SELECT COUNT(*) as total FROM "doctors"')
+        if isinstance(r, list) and r: kpis["doc_count"] = r[0].get("total") or 0
+    except Exception as exc:
+        print(f"[KPI Error] {exc}")
     return kpis
 
 
@@ -274,7 +277,10 @@ def get_executive_kpis() -> dict:
 def get_globe_data_cached(show_sales: bool):
     import psycopg2
     from db import _CLEAN_URL
-    conn = psycopg2.connect(_CLEAN_URL)
+    try:
+        conn = psycopg2.connect(_CLEAN_URL, connect_timeout=10)
+    except psycopg2.OperationalError as exc:
+        raise RuntimeError(f"Database connection timed out. Please try again in a moment. ({exc})") from exc
     if show_sales:
         h_sql = """SELECT hc.latitude::float, hc.longitude::float, hc.name,
                           'Health Centre' as type,
@@ -366,8 +372,12 @@ def extract_multiple_entities(prompt: str) -> list:
 def fetch_location_for_entity(entity_name: str) -> list:
     import psycopg2
     from db import _CLEAN_URL
-    conn = psycopg2.connect(_CLEAN_URL)
     results = []
+    try:
+        conn = psycopg2.connect(_CLEAN_URL, connect_timeout=8)
+    except psycopg2.OperationalError as exc:
+        print(f"[Location DB Timeout] {exc}")
+        return results
     try:
         from psycopg2.extras import RealDictCursor
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -450,6 +460,7 @@ for key, default in [
     ("prompt_trigger",  None),
     ("username",        None),
     ("conv_history",    []),   # LLM conversation history for follow-ups
+    ("globe_loaded",    False),  # lazy-load flag for the Intelligence Globe tab
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -603,9 +614,30 @@ with tab1:
     st.caption("Ask questions in English or Roman Urdu")
     st.divider()
 
-    # Starter buttons
+    # Welcome state — shown only when no messages exist yet
     if not st.session_state.messages:
-        st.write("### 💡 Start with a sample report:")
+        st.markdown("""
+        <div style="
+            background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(168,85,247,0.12) 100%);
+            border: 1px solid rgba(99,102,241,0.3);
+            border-radius: 16px;
+            padding: 32px 36px;
+            margin-bottom: 24px;
+            text-align: center;
+        ">
+            <div style="font-size: 3rem; margin-bottom: 8px;">💊</div>
+            <h2 style="color: #f8fafc; font-family: Outfit, sans-serif; margin: 0 0 8px 0;">
+                Welcome to Pharma Intelligence
+            </h2>
+            <p style="color: #94a3b8; margin: 0; font-size: 0.95rem;">
+                Ask questions in <strong style="color:#a5b4fc">English</strong> or
+                <strong style="color:#a5b4fc">Roman Urdu</strong> — your data answers instantly.
+                <br>Data loads only when you ask, keeping the app fast.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.write("#### 💡 Try a sample report to get started:")
         starters = random.sample([
             "Compare top 5 bricks by internal units vs market units",
             "Show me top 5 Category A doctors",
@@ -704,8 +736,12 @@ with tab1:
             if is_map_intent(prompt):
                 entities = extract_multiple_entities(prompt)
                 all_locs = []
-                for ent in entities:
-                    all_locs.extend(fetch_location_for_entity(ent))
+                try:
+                    with st.spinner(f"📍 Looking up location(s) for: {', '.join(entities)}…"):
+                        for ent in entities:
+                            all_locs.extend(fetch_location_for_entity(ent))
+                except Exception as loc_err:
+                    st.warning(f"⚠️ Location lookup failed: {loc_err}")
 
                 if all_locs:
                     reply = f"📍 Found **{len(all_locs)}** location(s) for: {', '.join(entities)}"
@@ -843,40 +879,101 @@ with tab1:
 # ─────────────────────────────────────────────
 with tab2:
     st.subheader("🌍 Field Intelligence Globe (Satellite)")
-    show_sales = st.checkbox("💰 Show Sales Overlay", value=False)
 
-    try:
-        h_df, c_df, d_df = get_globe_data_cached(show_sales)
-        map_data = pd.concat([h_df, c_df, d_df])
-        vlat = map_data["latitude"].mean() if not map_data.empty else 24.86
-        vlng = map_data["longitude"].mean() if not map_data.empty else 67.00
+    # ── Lazy-load: only fetch data when the user explicitly requests it ──
+    if not st.session_state.globe_loaded:
+        st.markdown("""
+        <div style="
+            background: rgba(30,41,59,0.6);
+            border: 1px solid rgba(99,102,241,0.25);
+            border-radius: 14px;
+            padding: 36px;
+            text-align: center;
+            margin-top: 16px;
+        ">
+            <div style="font-size: 2.5rem; margin-bottom: 10px;">🗺️</div>
+            <h3 style="color: #f8fafc; font-family: Outfit, sans-serif; margin: 0 0 8px 0;">
+                Field Intelligence Map
+            </h3>
+            <p style="color: #94a3b8; margin: 0 0 20px 0; font-size: 0.9rem;">
+                Visualise health centres, customers, and doctors on a satellite map.<br>
+                Map data is fetched on demand to keep the app fast.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        import folium
-        from streamlit_folium import st_folium
+        col_btn, _ = st.columns([1, 3])
+        with col_btn:
+            if st.button("🚀 Load Globe Data", use_container_width=True):
+                st.session_state.globe_loaded = True
+                st.rerun()
 
-        m = folium.Map(
-            location=[vlat, vlng], zoom_start=11,
-            tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            attr="Esri",
-        )
-        for df, color, label in [(h_df,"red","HC"), (c_df,"orange","Cust")]:
-            for _, row in df.iterrows():
-                addr = row.get("address") or row.get("brick_name", "")
-                popup = f"<b>{row['name']}</b><br>{label}<br>📍 {addr}"
-                if show_sales and row["sales"] > 0:
-                    popup += f"<br><b style='color:green'>PKR {row['sales']:,.0f}</b>"
-                folium.CircleMarker(
-                    [row["latitude"], row["longitude"]],
-                    radius=7 if show_sales and row["sales"] > 20000 else 5,
-                    popup=folium.Popup(popup, max_width=250),
-                    color=color, fill=True,
-                ).add_to(m)
+    else:
+        show_sales = st.checkbox("💰 Show Sales Overlay", value=False)
 
-        for _, row in d_df.iterrows():
-            folium.CircleMarker([row["latitude"], row["longitude"]], radius=4, popup=f"{row['name']} (Doc)", color="blue", fill=True).add_to(m)
+        col_reload, _ = st.columns([1, 5])
+        with col_reload:
+            if st.button("🔄 Refresh Data"):
+                get_globe_data_cached.clear()
+                st.rerun()
 
-        st_folium(m, width=900, height=500, key=f"globe_{show_sales}")
-        st.info("🔴 Health Centres  |  🟠 Customers  |  🔵 Doctors")
+        try:
+            with st.spinner("🌍 Loading field intelligence data…"):
+                h_df, c_df, d_df = get_globe_data_cached(show_sales)
 
-    except Exception as e:
-        st.error(f"Globe error: {e}")
+            map_data = pd.concat([h_df, c_df, d_df])
+            vlat = map_data["latitude"].mean() if not map_data.empty else 24.86
+            vlng = map_data["longitude"].mean() if not map_data.empty else 67.00
+
+            import folium
+            from streamlit_folium import st_folium
+
+            m = folium.Map(
+                location=[vlat, vlng], zoom_start=11,
+                tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                attr="Esri",
+            )
+            for df, color, label in [(h_df,"red","HC"), (c_df,"orange","Cust")]:
+                for _, row in df.iterrows():
+                    addr = row.get("address") or row.get("brick_name", "")
+                    popup = f"<b>{row['name']}</b><br>{label}<br>📍 {addr}"
+                    if show_sales and row["sales"] > 0:
+                        popup += f"<br><b style='color:green'>PKR {row['sales']:,.0f}</b>"
+                    folium.CircleMarker(
+                        [row["latitude"], row["longitude"]],
+                        radius=7 if show_sales and row["sales"] > 20000 else 5,
+                        popup=folium.Popup(popup, max_width=250),
+                        color=color, fill=True,
+                    ).add_to(m)
+
+            for _, row in d_df.iterrows():
+                folium.CircleMarker([row["latitude"], row["longitude"]], radius=4, popup=f"{row['name']} (Doc)", color="blue", fill=True).add_to(m)
+
+            st_folium(m, width=900, height=500, key=f"globe_{show_sales}")
+            st.info("🔴 Health Centres  |  🟠 Customers  |  🔵 Doctors")
+
+            # ── Executive KPIs — loaded alongside globe data ──────────────
+            st.divider()
+            st.subheader("📊 Executive KPIs")
+            try:
+                with st.spinner("Loading KPIs…"):
+                    kpis = get_executive_kpis()
+                k1, k2, k3, k4 = st.columns(4)
+                k1.metric("📦 Internal Units Sold", f"{int(kpis['internal_sales']):,}" if kpis["internal_sales"] else "N/A")
+                k2.metric("🏪 Market Units Sold",   f"{int(kpis['market_sales']):,}"   if kpis["market_sales"]   else "N/A")
+                k3.metric("🏆 Top Brick",           kpis["top_brick"])
+                k4.metric("👨‍⚕️ Total Doctors",      f"{int(kpis['doc_count']):,}"      if kpis["doc_count"]      else "N/A")
+            except Exception as kpi_err:
+                st.warning(f"⚠️ KPIs unavailable: {kpi_err}")
+
+        except RuntimeError as e:
+            # DB connection timeout — show a friendly message instead of crashing
+            st.warning(f"⏳ {e}")
+            st.info("The database is taking longer than expected. Please click **Refresh Data** to try again.")
+            if st.button("🔄 Try Again"):
+                get_globe_data_cached.clear()
+                st.rerun()
+        except Exception as e:
+            st.error(f"Globe error: {e}")
+            if st.button("🔄 Retry"):
+                st.rerun()
